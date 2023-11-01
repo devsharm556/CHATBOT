@@ -7,7 +7,7 @@ nltk.download("stopwords")
 from nltk.stem import WordNetLemmatizer
 
 
-data = pd.read_excel("C:/PycharmProjects/pythonProject9090/dev vnb.xlsx")
+data = pd.read_excel("dev vnb.xlsx")
 
 data
 
@@ -163,7 +163,7 @@ def classify_intent(model_content, user_input, model_name="gpt-3.5-turbo"):
     return intent
 
 # Load the intent classification model
-model_file = 'C:/PycharmProjects/pythonProject9090/intent_classifier_model'
+model_file = 'intent_classifier_model'
 models = load_intent_classifier(model_file)
 
 # Example user input
@@ -204,11 +204,11 @@ def classify_intent(model_content, user_input, model_name="gpt-3.5-turbo"):
     return intent
 
 # Load the intent classification model
-model_file = 'C:/PycharmProjects/pythonProject9090/intent_classifier_model'
+model_file = 'intent_classifier_model'
 models = load_intent_classifier(model_file)
 
 # Load your custom intent data
-with open('C:/PycharmProjects/pythonProject9090/intent_data.json', 'r') as json_file:
+with open('intent_data.json', 'r') as json_file:
     custom_intent_data = json.load(json_file)
 
 # Classify intents for your custom data
