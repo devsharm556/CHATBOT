@@ -3,12 +3,11 @@ import pandas as pd
 import numpy as np
 import nltk
 nltk.download('punkt')
-
 nltk.download("stopwords")
 from nltk.stem import WordNetLemmatizer
 
 
-data = pd.read_excel("C:/Users/User-110/Documents/dev vnb.xlsx")
+data = pd.read_excel("C:/PycharmProjects/pythonProject9090/dev vnb.xlsx")
 
 data
 
@@ -77,10 +76,152 @@ data
 print(data.columns)
 
 print(data.head())
+
+
+
+import openai
+import json
+
+# Set your OpenAI API key
+api_key = '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'
+openai.api_key = api_key
+
+# Your data (replace with your actual data)
+data = [
+    {
+        "Prompt": "Please provide a summary of the conversation below: Agent:- I ok, why not get a year? Agent:- Hello. Hello, good afternoon ma'am. My name is I'm calling from the website and I'm speaking with ma'am. Customer:-Yes. Agent:- Um I'm calling from just her website. Just her. Ok. Ok. Customer:- Ok, I have ordered that one. Agent:- Yeah. Yeah. Yeah. Yeah, t",
+        "Completion": "Agent: Thank you for confirming your order, ma'am. We have all the necessary details, and your order amount is indeed $349. We appreciate your business and hope you are satisfied with your purchase. If you have any further inquiries or require assistance, feel free to reach out. Have a wonderful day! Customer: Thank you for your help. Goodbye! Agent: Goodbye, ma'am. Thank you, and have a pleasant day!	",
+        "cleaned_prompt": "Please provide a summary of the conversation below Agent I ok why not get a year Agent	",
+        "cleaned_completion": "Agent Thank you for confirming your order ma am We have all the necessary details and your order amount is indeed We appreciate your business and hope you are satisfied with your purchase If you have any further inquiries or require assistance feel free to reach out Have a wonderful day Customer Thank you for your help Goodbye Agent Goodbye ma am Thank you and have a pleasant day"
+    },
+    # Add more data entries here
+]
+
+# Create a JSON file for training data
+intent_data = []
+for entry in data:
+    intent_data.append({
+        "intent": entry["cleaned_prompt"],
+        "response": entry["cleaned_completion"],
+        "user_input": entry["Prompt"]  # Add the "user input" field
+    })
+
+# Save intent data as a JSON file
+with open('intent_data.json', 'w') as json_file:
+    json.dump(intent_data, json_file)
+
+# Training the GPT-3.5 Turbo model for intent classification
+def train_intent_classifier(data_file, model_name="gpt-3.5-turbo", output_file="intent_classifier_model"):
+    # Load the data from the JSON file
+    with open(data_file, 'r') as json_file:
+        data = json.load(json_file)
+
+    # Prepare the training data
+    training_data = ""
+    for entry in data:
+        training_data += f'user_input: {entry["user_input"]}\nintent: {entry["intent"]}\nresponse: {entry["response"]}\n'
+
+    # Train the intent classification model
+    response = openai.ChatCompletion.create(
+        model=model_name,
+        messages=[{"role": "system", "content": "You are a helpful assistant that classifies intents."},
+                  {"role": "user", "content": training_data}],
+    )
+
+    # Save the trained model content
+    with open(output_file, 'wb') as model_file:
+        model_file.write(response['choices'][0]['message']['content'].encode())
+
+# Train the intent classifier and save the model
+train_intent_classifier('intent_data.json', 'gpt-3.5-turbo', 'intent_classifier_model')
+
+import openai
+import json
+
+# Set your OpenAI API key
+
+# Load the trained intent classification model
+def load_intent_classifier(model_file):
+    with open(model_file, 'rb') as model_file:
+        model_content = model_file.read()
+    return model_content
+
+# Function to classify intent
+def classify_intent(model_content, user_input, model_name="gpt-3.5-turbo"):
+    # Use the intent classification model
+    response = openai.ChatCompletion.create(
+        model=model_name,
+        messages=[
+            {"role": "system", "content": "You are an intent classifier."},
+            {"role": "user", "content": user_input}
+        ],
+
+    )
+
+    # Extract and return the predicted intent
+    intent = response['choices'][0]['message']['content']
+    return intent
+
+# Load the intent classification model
+model_file = 'C:/PycharmProjects/pythonProject9090/intent_classifier_model'
+models = load_intent_classifier(model_file)
+
+# Example user input
+user_input = "Please provide a summary of the conversation below Agent I ok why not get a year Agent Hello Hello good afternoon ma am My name is I m calling from the website and I m speaking with ma am Customer Yes Agent Um I m calling from just her website Just her Ok Ok Customer Ok I have ordered that one Agent Yeah Yeah Yeah Yeah the order the order you check set of three and uh we get you you for free visit So do you want this order Your order amount is cash and delivery uh only and right Yeah Yeah you will be getting at a discount from our hand if you will be placed the order now So you you pay only Customer Yeah Yeah my order is my order is confirmed The amount is right Ok Ok Ok Ok Oh ok Agent So your your address is yeah I forgot to just a uh your pin code is five triple Customer Yes Agent your contact number is double two double Am I right ma am Am I right ma am Ok Ok ma am you you my address ma am Uh I m a ma am Hello ma am Uh ma am Ah that s ma am sorry ma am Uh your voice is brick so then then uh you just right Customer Yeah I forgot to mention Ok Ok Ok Ok Ok bye Agent Sorry ma am Your voice is break sorry sorry for that your voice is break ma am Yeah Customer Ok Just hold on Ok Agent Hello Yes ma am No Are you audible Customer Yeah Yeah Yeah Yeah Yeah Yeah Yeah Yeah Yeah Ok Agent Your address Ok Ok Ok Ok Ok Ok ma am Thank you ma am Ok Ok Ok your your order amount is only you pay Customer Ok thank you so much Customer Yeah Ok thank you maam Thank you for your time Have a nice day maam Ok sir t Please provide a summary of the conversation below Agent Hello Hello good afternoon sir My name is I m calling from website Uh will you yesterday website am I right sir Customer Yes one year Sure Ok Agent Mhm Ok sir Am I right sir Yes Customer Yes I have Am I right sir Yes seriously You said house number two Yeah house number Linda second landmark Capital Birbb Ok Jiv uh Giueg July UK Iuv Uh ok sir Agent You ok sir Contact number for confirmation to working days Contact number for confirmation Ok sir Ok sir Actually contact support customer support your office number Am I right sir Am I right sir Customer Yeah Ok Ok t Please provide a summary of the conversation below Agent hello good afternoon name is i am calling from just therapy website madam Customer sir Agent madam check yesterday just third website pay visit order place but madam order confirm madam can delivery order and maam benefits regarding call madam order set of free order am right maam Customer sir Agent madam set of free of shock just official website company madam set of five provide same price same same price madam set of five list lipstick madam product free six ninety five free mam right maam Coustomer sir maam and maam looks test news look of choice shades line pay madam line pay madam amount lipstick lipstick amount maam lipstick can delivery cash delivery his causes because burgundy nineteen cotton lookup pink maam district district district states line pay madam district maam madam hips bread beetroot burgundy resin rust madam states okay madam Customer but order voice Agent madam order madam order to his list red burgundy madam burgundy okay madam pink pink pink madam rose zero maam pink sheet maam chase pink pink apricot coral future malls query pin madam set of five madam set of five categories disease news down bright think okay madam categories shares madam allow okay madam okay madam Customer okay sir Agent madam category days and depends maam madam dustin dusty resin beetroot burgundy okay madam hundred category okay maam second categories new color new colour news and ground news color maam soft being very liquid zest ground cinnamon spice very news almonds okay madam news around states madam madam third category light pink states first date madam pink second apricot call third feature per fourth remo pay fourth fifth pink madam category states okay maam okay sir okay madam news color remind shade soft drink brand madam special categories special costly high level cost almond grace maam two thousand get costly cost quality maam software set of five provide qualities states maam high quality extra almond grace maam okay madam side confirm okay okay okay madam news color madam address confirm market opposite market pin code confirm double three two three double one mm right madam madam madam contact number confirm eight six nine zero nine five six zero three one am right maam maam yes sir madam t Please provide a summary of the conversation below Agent hello good evening madam name is i am calling from just website Coustomer and madam Customer lipstick order Agent issue offer maam order maam two two nine nine prepaid three four nine can delivery and amount maam set of three lakh but maam set of three stock maam just official website customer care hand same price five maam help madam main set of five same price madam thirty nine maam two ninety nine prepaid three four nine cash on delivery three forty nine mm Customer Agent madam set of five lipstick seventeen free free Customer Agent madam confirmation regarding call set of free madam lipstick offer offer regarding offer call madam allow order place color madam without confirmation problem face confirmation line pay madam choice Customer actually issue issue inter issue allow order place line pay after madam job choice day two night look zeros marvel magnet yeah right madam set of five set of five dusty beetroot burgundy hip rest madam choice choice set of five provide madam disease confused and i guess madam final better lip and chicken free free ninety five product free madam Customer Agent maam allow behalf pay order place Customer payment Agent madam can delivery prepaid n delivery pay pay can delivery and three four nine but maam five percent additional discount provide madam three four nine three fifty pay three thirty four pay can delivery madam three thirty four forty nine two forty nine two ninety nine two ninety nine ninety nine madam prepaid two ninety nine pay two eighty four pay only because five percent discount madam add prepaid add and easy way add maam add two ninety nine two eighty four three something two eighty four maam only allow just official website customer care hand notification provide maam two eight four pay two eight four states heroes site pay hotel madam issue two card madam amount set of three set of free apply madam set of five apply actually edit corrections hand madam Customer Agent line pay madam second google pay pay notification tax gmail id madam okay madam madam madam contact number confirm contact number mention Customer Agent line pay madam okay madam contact number eight seven seven zero two seven zero four double two yeah right madam madam t Please provide a summary of the conversation below Agent good morning name is and calling from just website Customer email Agent madam line pay check actually website pay website order place maam issue line pay check maam check four products product add product free maam mm right madam products maam day long rectangle d black serum foundation name log sharp sharp level available in shares teal blue nursing free maam mm right madam madam can delivery actually pay prepaid shipping one nine nine and prepaid pay better can delivery issue madam free delivery but maam better better offer delivery charges confirm line pay madam okay okay hand maam benefits but benefits line pay maam okay okay okay maam one zero four nine can delivery maam one zero four nine only fifty rupees one eighty nine pay one zero four nine pay can delivery okay madam okay okay madam address confirm flight number five two three flat number four zero four residency two second main pin code six double zero nine eight mam pin code confirm pin code nine five six five two double five double five mm right maam correct correct order just confirm gmail contact number confirmation twenty four okay okay remove okay okay madam line pay check madam contact number confirm nine five six five two double five double five right madam correct correct okay maam change madam line pay madam amount amount amount pay amount amount pay benefit one zero four nine pay okay okay madam can delete charges deduct okay payment link madam can delivery can delivery sorry can delivery okay madam issue face can delivery n delivery prepaid prepaid can delivery no problem okay can delivery maam yes maam same same site number five two three flat number four zero four regency forty two second main bangalore karnataka five six double zero four five six double zero nine eight pin code correct nineteen sixty five two double five double five okay maam correct Customer yes Agent okay madam okay madam related Customer think night okay madam thank you maam thank you for your precious and we nice day maam thank you thank you madam most welcome t Please provide a summary of the conversation below Agent good afternoon name is i am calling from just for website kamlesh Customer sir check yesterday just website pay visit order place but sir order confirm sir sir order sir right inning under a npo loan due sir two ninety five floral fees yeah right sir Customer yes sir coupon coupon fill Agent sir coupon code sir check problem coupon code check line pay sir sir hold sir sir prepaid order delivery sir sorry sir sir zomato coupon code coupon code a ording sir one ninety nine can delivery sir product two ninety five sir cream sir roland sir floral fees college sir madam wife dance national tv type voice sir sorry sir problem fees roland sir dark clear sir and allergy clear sir and sir skin problems hair hair sir hair remove problem sir clear product total herbal problem product sir side effect sir and sir sir problem sir better sir Customer sir Agent actually total product total sir side effect sir maam schemes scheme use sir schemes sir sir hundred percent hundred percent sir sir product total hundred percent total herbal sir Customer time Agent sir sir long lasting sir sir hello casting sir one one sir hours sir use after watch after watching Customer one hello blow hello wife three Agent sir sir sir and sir problem face sir second continue heavy product sir product sir Customer book first time slow Agent sir product sir sir okay okay sir ac delivery only sir one ninety nine pay one ninety nine coupon sir sir amount two ninety five line pay sir second two ninety five sir and sir zomato coupon code sir one forty nine and can delivery charge sir one ninety nine sir sir one ninety nine coupon two ninety nine sir one ninety nine coupon sir one ninety nine amount sir coupon one ninety nine sir sir okay sir address confirm address kamlesh fourteen nine house naroda forty nine ill content house pin code confirm sir three eight two three three zero am right sir sir t Please provide a summary of the conversation below Agent good morning sir name is love an i am calling from just website return Custom yes Agent madam check mam google pay coupon code just website pay google pay through madam choice sixteen years six choice madam six ninety five product free and fifteen am right maam madam can delivery offer three four nine and just official website customer care hand benefits regarding call madam order can delivery just official website customer care hand side five percent additional discount provide madam allow behalf pay order place can delivery three forty nine pay three thirty four pay insurance of lipstick five seven five two nine nine and madam six nine five product free nourishing depand okay madam madam order regarding confirmation regarding call madam order thirty four maam shipping shipping shipping address madam mention madam written code road am right maam pin code madam one double four six two six am right maam Customer yes Agent maam contact number confirm nine double eight double eight zero eight zero three zero am right maam yes maam address house number add pay shipping maam add add okay maam line add madam delivery partner problem face add line pay madam add near landmark road okay road road madam road old road because madam same madam shipping house number mention maam number ward number seven ward number seven ward number seven ward number seven old road pin code one double two six two six contact number nine double eight double eight zero eight three zero am right maam yes maam behalf pay order place maam three forty nine pay three thirty four pay and maam billing five percent discount add three thirty four okay maam thank you guiding okay maam just maam maam just official website customer care hand just order confirm gmail and contact number pay confirmation twenty four working hours tracking id seven two fourteen working days delivery part delivery maam delivery part contact number pay confirmation delivery okay maam maam okay maam just maam okay t Please provide a summary of the conversation below Agent good afternoon name is i am calling from just herbie website singh name Customer yes Agent madam check yesterday just heard website order but madam order confirm madam order check madam just issue knowledge maam maam coupon code just official website google pay through coupon code buy one get we offer choice sixteen states choice sixteen seats of listed seven ninety product free seven hundred narration the free madam madam order two nine nine and three four nine list product free three four nine madam madam order confirmation regarding call order madam prepaid order can delivery Customer okay Agent okay maam mystic list wrong last super pigmented news color dark colour party wear office wear casual where application applicator fine total transfer total madam lipstick madam lips lift soft dry list crack okay maam lipstick sixteen shares lipstick transfer bottles pay lips coffee madam time pay transfer bottle transfer and maam madam seven hundred hundred product free nrc madam you z blood madam six pay use redness fairness use six pay has lip balm lift pay use and lipstick madam lift color light share mash use madam lips clean fresh signing full pay maam cash on delivery prepaid yeah maam can delivery only three forty nine pay Customer discount Agent maam discount coupon code and maam discount just official website customer care hand side five percent additional discount provide madam cash on delivery three forty nine pay three thirty four pay maam coupon code offer maam pride and madam six ninety five product free coupon code and madam five percent additional discount hand annually customer madam Customer fast delivery Agent pay three forty three thirty four only madam three thirty four send Customer lipstick problem just Agent madam problem face total side effect product total and one madam thirty four maam address confirm address house number eighty five one zero at jammu and kashmir pin code confirm one eight five website madam madam one eight triple zero five mm right maam madam contact number confirm nine four one nine one zero four eight three zero am right maam address mention same address pay shipping okay okay maam madam office hospital website customer care hand notification address order confirm address confirmation order just confirm order id provide twenty four working hours tracking idea seven two fourteen working days delivery partner delivery delivery number pay madam confirmation madam mam related thank you and maam guiding problem face okay maam thank you maam thank you for your precious amway nice day maam t Please provide a summary of the conversation below Agent hello website aman Customer Agent madam payment receive Customer four twenty eight four seventy receive Agent maam payment okay madam call try time madam but issue madam order create change option option madam okay madam line pay maam nursing depand tent madam break red break coral pink nominee soft news pink forever coral Customer minute shape pc coral pci coral okay Agent minute madam mahogany mahoney order pc coral add second check pc coral madam coral nursing lip and shifting missing lip and chicken flavour added coral pink added s change zero four zero four mahogany okay maam zero four mahogany okay sure just wait maam okay madam total her in the slip scrub fifteen p scrub choice three ninety five okay madam madam powder baby zero four madam add okay madam two in one drive face and scrub dimond sixteen sixty five gram seven two body policy body policy open and turmeric sixty five grams seven twenty five asian jail indian indian murder and madam fifteen fifteen gram three seventy five narrating city zero four six ninety five okay madam okay madam madam order second order madam name just wait name long tractor uncle rates rates table deep one forty nine is lipstick set of five news brown maam news brown seven forty okay madam narration depand fifteen free six ninety five okay madam madam pc pc coral madam pc corona madam okay madam Customer call Agent okay maam and maam just order confirm order twenty four working track idea seven two fourteen working days delivery part delivery delivery part delivery contact number confirmation delivery maam okay maam next order next order next next order s maam okay issue okay maam maam guiding problem face Customer issue problem Agent okay madam just related okay madam order confirm mam order id provide provide just gmail id contact number pay okay maam okay maam just mam thank you t Please provide a summary of the conversation below Agent hello yes madam madam is am calling from just yeah you told me to arrange call back regarding your order yes yes yes made just want calling with you before order sorry yeah if you put port okay but would like to tell you this system is call mam so if you try to contact you cannot contact this okay fine this will you will go through it s sure maam okay okay so used product so yes okay you confirm your order madam no problem right two brand shampoo two conditioner fine right propose but can check your order has been confirmed yes madam okay okay so you want anti dental shampoo with discuss wait two quantity and anti dental conditioner am right not dental condition and you and conditioner seen that and everyone so that water lily water need second conditioner yeah it is indian white water list silicon condition mm right yes yes right ok ok ok you want two quantity i am right right okay so you want and delivery of prepaid which is can avail this offer in which mode and do which mode available offers available in both maam prepaid yeah well and delivery okay but would like to tell you an an delivery Customer yeah you can check Agent we have fifty rupees charges but no you just do not have two any extra charges yeah available customer you just have to pay total amount one one four nine and made is made a prepaid Customer is there any other offer Agent no madam it will be seven one four nine one month four nine yeah just before you said that you can make me some offer like can pay one zero four seven something like that oh but but this offer for air madam you were has slept mask fifteen gram Customer okay yeah but at and i want to yeah for this Agent this is a offer website sale you want one one four nine but can provide you five percent additional more discount it will be one zero nine one it will be one zero nine one one okay what tattoo do okay so you want prepaid and delivery prepaid okay prepaid in prepaid you just have to proceed payment am providing you were payment link through official website just you just have to proceed payment can confirm your order of your behalf prepaid more madam okay and continue but two one four nine one zero one zero nine nine one automatically right yeah yeah yeah but it shows some coupon found whether have to a ept not which coupon madam s mac uconn something am site okay it which coupon madam second will say but there is no coupon would like to tell you there s website sale product which you providing product which is nourishing lipid madam no you said you know okay okay but would lab "
+# Classify the user's intent
+predicted_intent = classify_intent(models, user_input)
+
+# Print the predicted intent
+print("Predicted Intent:", predicted_intent)
+
+
+
+import openai
+import json
+
+
+
+# Load the trained intent classification model
+def load_intent_classifier(model_file):
+    with open(model_file, 'rb') as model_file:
+        model_content = model_file.read()
+    return model_content
+
+# Function to classify intent
+def classify_intent(model_content, user_input, model_name="gpt-3.5-turbo"):
+    # Use the intent classification model
+    response = openai.ChatCompletion.create(
+        model=model_name,
+        messages=[
+            {"role": "system", "content": "You are an intent classifier."},
+            {"role": "user", "content": user_input}
+        ],
+
+    )
+
+    # Extract and return the predicted intent
+    intent = response['choices'][0]['message']['content']
+    return intent
+
+# Load the intent classification model
+model_file = 'C:/PycharmProjects/pythonProject9090/intent_classifier_model'
+models = load_intent_classifier(model_file)
+
+# Load your custom intent data
+with open('C:/PycharmProjects/pythonProject9090/intent_data.json', 'r') as json_file:
+    custom_intent_data = json.load(json_file)
+
+# Classify intents for your custom data
+for item in custom_intent_data:
+    user_input = item['user_input']
+    predicted_intent = classify_intent(models, user_input)
+    print(f"User Input: {user_input} - Predicted Intent: {predicted_intent}")
+
+
+
 import streamlit as st
 import openai
-api_key = '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'
-openai.api_key = api_key
+
 
 
 custom_dataset = [
